@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tra Cứu Giá | FA Price Lookup</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange:#E8620A;--orange-l:#FF7A20;--orange-pale:#FFF3EC;--orange-bd:#FDDCC8;--orange-dk:#B34D05;
+    --white:#FFF;--g50:#F8F7F5;--g100:#EEECE8;--g200:#D5D2CB;--g400:#9B978E;--g600:#5C5850;--g800:#2E2C28;
+    --green:#217A45;--green-bg:#EAF5EF;--red:#C0392B;--red-bg:#FDECEA;--blue:#1A5FA8;--blue-bg:#E8F1FA;
+    --r:10px;--sh:0 2px 12px rgba(0,0,0,0.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Barlow',sans-serif;background:var(--g50);color:var(--g800);min-height:100vh}
+  header{background:var(--orange);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(232,98,10,.3)}
+  .logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:.5px}
+  .logo span{color:rgba(255,255,255,.65);font-weight:600}
+  .hdr-sub{font-size:12px;color:rgba(255,255,255,.75)}
+  main{max-width:1080px;margin:0 auto;padding:28px 20px 64px}
+
+  /* SETUP PANEL */
+  .setup-panel{background:#fff;border-radius:var(--r);border:1.5px solid var(--orange-bd);padding:24px;margin-bottom:24px;box-shadow:var(--sh)}
+  .setup-title{font-size:13px;font-weight:700;color:var(--orange-dk);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+  .setup-desc{font-size:13px;color:var(--g600);margin-bottom:16px;line-height:1.6}
+  .setup-desc a{color:var(--orange);text-decoration:none}
+  .setup-desc a:hover{text-decoration:underline}
+  .setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .setup-field label{font-size:12px;font-weight:600;color:var(--g600);display:block;margin-bottom:4px}
+  .setup-field input{width:100%;padding:9px 12px;border:1.5px solid var(--g200);border-radius:7px;font-size:13px;font-family:'Barlow',sans-serif;color:var(--g800);outline:none;background:var(--g50);transition:border-color .15s}
+  .setup-field input:focus{border-color:var(--orange);background:#fff}
+  .setup-field input.ok{border-color:var(--green)}
+  .setup-field input.err{border-color:var(--red)}
+  .btn-connect{margin-top:14px;padding:10px 24px;background:var(--orange);color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;transition:background .15s}
+  .btn-connect:hover{background:var(--orange-dk)}
+  .btn-connect:disabled{background:var(--g200);cursor:not-allowed}
+  .setup-note{margin-top:12px;font-size:12px;color:var(--g400);line-height:1.6;padding:10px 14px;background:var(--g50);border-radius:7px;border-left:3px solid var(--orange-bd)}
+
+  /* TABS */
+  .tabs{display:flex;gap:8px;margin-bottom:20px}
+  .tab{padding:10px 28px;border-radius:8px;border:2px solid var(--g200);font-size:15px;font-weight:600;cursor:pointer;transition:all .18s;background:#fff;color:var(--g600)}
+  .tab.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .tab:hover:not(.active){border-color:var(--orange);color:var(--orange)}
+  .tab-badge{display:inline-block;background:rgba(255,255,255,.25);border-radius:20px;font-size:11px;padding:1px 7px;margin-left:6px;font-weight:700}
+  .tab:not(.active) .tab-badge{background:var(--orange-pale);color:var(--orange)}
+
+  /* PANEL */
+  .panel{display:none}.panel.active{display:block}
+
+  /* SEARCH CARD */
+  .sc{background:#fff;border-radius:var(--r);border:1.5px solid var(--orange-bd);padding:22px;margin-bottom:20px;box-shadow:var(--sh)}
+  .sc-label{font-size:12px;font-weight:700;color:var(--orange-dk);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+  .sr{display:flex;gap:8px;align-items:center}
+  .si{flex:1;padding:11px 14px;border:1.5px solid var(--g200);border-radius:8px;font-size:15px;font-family:'Barlow',sans-serif;color:var(--g800);background:var(--g50);outline:none;transition:border-color .15s,background .15s}
+  .si:focus{border-color:var(--orange);background:#fff}
+  .si::placeholder{color:var(--g400)}
+  .btn-s{padding:11px 22px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;font-family:'Barlow',sans-serif;white-space:nowrap}
+  .btn-s:hover{background:var(--orange-dk)}
+  .btn-x{padding:11px 14px;background:#fff;color:var(--g600);border:1.5px solid var(--g200);border-radius:8px;font-size:14px;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif}
+  .btn-x:hover{border-color:var(--orange);color:var(--orange)}
+  .hint{font-size:12px;color:var(--g400);margin-top:7px}
+  .hint b{color:var(--orange)}
+
+  /* STATUS BAR */
+  .sb{font-size:13px;color:var(--g600);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--g200);display:inline-block;flex-shrink:0}
+  .dot.green{background:var(--green)}.dot.orange{background:var(--orange);animation:pulse 1s infinite}
+  .dot.red{background:var(--red)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* RESULT CARDS */
+  .rh{font-size:13px;color:var(--g600);margin-bottom:10px;font-weight:500}
+  .rg{display:flex;flex-direction:column;gap:10px}
+  .rc{background:#fff;border-radius:var(--r);border:1.5px solid var(--g100);padding:16px 18px;transition:border-color .15s,box-shadow .15s}
+  .rc:hover{border-color:var(--orange-bd);box-shadow:0 4px 16px rgba(232,98,10,.08)}
+  .rc.top{border-color:var(--orange-bd);background:var(--orange-pale)}
+  .ct{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px}
+  .mn{font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:800;color:var(--g800);flex:1;word-break:break-all}
+  .mb{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+  .mb-top{background:var(--orange);color:#fff}
+  .mb-good{background:var(--blue-bg);color:var(--blue)}
+  .mb-part{background:var(--g100);color:var(--g600)}
+  .meta{display:flex;flex-wrap:wrap;gap:5px 14px;margin-bottom:10px}
+  .mi{font-size:12px;color:var(--g600)}
+  .mi b{color:var(--g800);font-weight:600}
+  .ps{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;padding-top:10px;border-top:1px solid var(--g100)}
+  .pb{background:var(--g50);border-radius:8px;padding:9px 12px}
+  .pb.hi{background:var(--orange-pale);border:1px solid var(--orange-bd)}
+  .pbl{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+  .pv{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--orange)}
+  .pv.list{color:var(--g600);font-size:16px;font-weight:600}
+  .pv.neg{color:var(--red)}
+  .cr{display:flex;align-items:center;gap:6px;margin-top:7px}
+  .cl{font-size:11px;color:var(--g600);white-space:nowrap;font-weight:500;min-width:58px}
+  .pi{width:72px;padding:5px 8px;border:1.5px solid var(--g200);border-radius:6px;font-size:14px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--orange);text-align:right;outline:none;background:#fff;transition:border-color .15s}
+  .pi:focus{border-color:var(--orange)}
+  .ps-sign{font-size:12px;color:var(--g400)}
+  .cres{font-size:12px;color:var(--g600);margin-top:4px}
+  .cres b{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--green)}
+  .cres.neg b{color:var(--red)}
+
+  /* EMPTY / LOADING */
+  .es{text-align:center;padding:40px 24px;color:var(--g400)}
+  .es h3{font-size:15px;color:var(--g600);margin-bottom:5px}
+  .es p{font-size:13px}
+  .ld{text-align:center;padding:28px;color:var(--g400);font-size:13px}
+  .sp{width:26px;height:26px;border:3px solid var(--orange-bd);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  footer{text-align:center;padding:20px;font-size:12px;color:var(--g400);border-top:1px solid var(--g100);margin-top:40px}
+  @media(max-width:600px){.setup-grid{grid-template-columns:1fr}.sr{flex-wrap:wrap}.btn-s{width:100%}.ps{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">FA<span>Price</span></div>
+  <div class="hdr-sub">Factory Automation — Price Lookup</div>
+</header>
+<main>
+
+<!-- SETUP PANEL -->
+<div class="setup-panel" id="setup-panel">
+  <div class="setup-title">⚙ Kết nối dữ liệu Google Sheets</div>
+  <div class="setup-desc">
+    Dán <b>Apps Script Web App URL</b> của từng sheet vào bên dưới.<br>
+    Xem hướng dẫn tạo URL: <a href="#" onclick="toggleGuide();return false">▶ Hướng dẫn tạo Apps Script (click để mở)</a>
+  </div>
+  <div id="guide" style="display:none;margin-bottom:16px;padding:14px;background:var(--g50);border-radius:8px;border:1px solid var(--g100);font-size:12px;line-height:1.8;color:var(--g600)">
+    <b style="color:var(--g800)">Làm 1 lần cho mỗi sheet:</b><br>
+    1. Mở Google Sheet → menu <b>Extensions → Apps Script</b><br>
+    2. Xóa code cũ, dán đoạn code sau:<br>
+    <pre style="background:#fff;padding:10px;border-radius:6px;border:1px solid var(--g200);margin:8px 0;overflow-x:auto;font-size:11px">function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets();
+  var result = [];
+  sheets.forEach(function(sheet) {
+    var data = sheet.getDataRange().getValues();
+    result.push({ sheetName: sheet.getName(), data: data });
+  });
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+    3. Nhấn <b>Deploy → New deployment</b><br>
+    4. Type: <b>Web app</b> | Execute as: <b>Me</b> | Who has access: <b>Anyone</b><br>
+    5. Nhấn <b>Deploy</b> → copy URL dạng <code>https://script.google.com/macros/s/…/exec</code><br>
+    6. Dán vào ô bên dưới
+  </div>
+  <div class="setup-grid">
+    <div class="setup-field">
+      <label>🔵 Inovance — Apps Script URL</label>
+      <input type="text" id="inv-url" placeholder="https://script.google.com/macros/s/.../exec" oninput="resetStatus('inv')">
+    </div>
+    <div class="setup-field">
+      <label>🟠 Yaskawa — Apps Script URL</label>
+      <input type="text" id="yas-url" placeholder="https://script.google.com/macros/s/.../exec" oninput="resetStatus('yas')">
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button class="btn-connect" id="btn-connect" onclick="connectAll()">🔗 Kết nối &amp; Tải dữ liệu</button>
+    <span id="connect-msg" style="font-size:13px;color:var(--g600)"></span>
+  </div>
+  <div class="setup-note">
+    💡 URL Apps Script chỉ cần tạo <b>1 lần</b>. Lần sau mở app chỉ cần dán lại URL (hoặc lưu vào bookmark). Dữ liệu được tải trực tiếp từ sheet — luôn cập nhật.
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('inovance')">Inovance <span class="tab-badge" id="inv-cnt">—</span></button>
+  <button class="tab" onclick="switchTab('yaskawa')">Yaskawa <span class="tab-badge" id="yas-cnt">—</span></button>
+</div>
+
+<!-- INOVANCE -->
+<div class="panel active" id="panel-inovance">
+  <div class="sc">
+    <div class="sc-label">Inovance — Tìm theo Model</div>
+    <div class="sr">
+      <input class="si" id="inv-q" placeholder="Nhập model, VD: MD500, H5U, IS620N…" oninput="doSearch('inovance')">
+      <button class="btn-x" onclick="clearQ('inovance')">✕</button>
+      <button class="btn-s" onclick="doSearch('inovance')">🔍 Tra cứu</button>
+    </div>
+    <div class="hint">Tìm gần đúng — nhập 1 phần model. VD: <b>MD500</b>, <b>H5U</b>, <b>IS620</b></div>
+  </div>
+  <div class="sb"><span class="dot" id="inv-dot"></span><span id="inv-st">Chưa kết nối — nhập URL và nhấn Kết nối bên trên</span></div>
+  <div id="inv-res"></div>
+</div>
+
+<!-- YASKAWA -->
+<div class="panel" id="panel-yaskawa">
+  <div class="sc">
+    <div class="sc-label">Yaskawa — Tìm theo Short Name</div>
+    <div class="sr">
+      <input class="si" id="yas-q" placeholder="Nhập short name, VD: GA700, SGD7S, CACR…" oninput="doSearch('yaskawa')">
+      <button class="btn-x" onclick="clearQ('yaskawa')">✕</button>
+      <button class="btn-s" onclick="doSearch('yaskawa')">🔍 Tra cứu</button>
+    </div>
+    <div class="hint">Tìm gần đúng — nhập 1 phần tên. VD: <b>GA700</b>, <b>SGD7S</b>, <b>CACR</b></div>
+  </div>
+  <div class="sb"><span class="dot" id="yas-dot"></span><span id="yas-st">Chưa kết nối — nhập URL và nhấn Kết nối bên trên</span></div>
+  <div id="yas-res"></div>
+</div>
+
+</main>
+<footer>Chỉ dùng nội bộ — dữ liệu tải trực tiếp từ Google Sheets qua Apps Script</footer>
+
+<script>
+const DB = {
+  inovance:{ data:[], headers:[], loaded:false, modelCol:'', priceCol:'', descCol:'' },
+  yaskawa:{ data:[], headers:[], loaded:false, modelCol:'', priceCol:'', descCol:'' }
+};
+
+function toggleGuide(){ const g=document.getElementById('guide'); g.style.display=g.style.display==='none'?'block':'none'; }
+
+function resetStatus(pfx){ document.getElementById(pfx+'-url').classList.remove('ok','err'); }
+
+async function connectAll(silent){
+  const invUrl = document.getElementById('inv-url').value.trim();
+  const yasUrl = document.getElementById('yas-url').value.trim();
+  if(!invUrl && !yasUrl){ if(!silent) setMsg('Vui lòng nhập ít nhất 1 URL','red'); return; }
+  if(invUrl) localStorage.setItem('inv_url', invUrl);
+  if(yasUrl) localStorage.setItem('yas_url', yasUrl);
+  if(!silent){ document.getElementById('btn-connect').disabled=true; setMsg('Đang kết nối...',''); }
+  const p = [];
+  if(invUrl) p.push(loadData('inovance', invUrl));
+  if(yasUrl) p.push(loadData('yaskawa', yasUrl));
+  await Promise.all(p);
+  if(!silent) document.getElementById('btn-connect').disabled=false;
+  const ok = (invUrl && DB.inovance.loaded) || (yasUrl && DB.yaskawa.loaded);
+  setMsg(ok ? '✅ Đã kết nối!' : '❌ Kết nối thất bại — kiểm tra URL', ok?'green':'red');
+}
+
+function setMsg(msg, color){
+  const el = document.getElementById('connect-msg');
+  el.textContent = msg;
+  el.style.color = color==='green'?'var(--green)':color==='red'?'var(--red)':'var(--g600)';
+}
+
+async function loadData(brand, url){
+  setSt(brand,'orange','Đang tải...');
+  try {
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    // json = [{sheetName, data:[rows]}, ...]
+    let allRows=[], headers=null;
+    for(const sheet of json){
+      const rows = sheet.data;
+      if(!rows||rows.length<2) continue;
+      if(!headers){
+        // Auto-detect real header row: scan until a row has enough non-empty cells (>=5)
+        // and at least one cell looks like a column header (not a date/info line)
+        let headerIdx = 0;
+        for(let i=0;i<Math.min(rows.length,15);i++){
+          const r = rows[i];
+          const filled = r.filter(c=>String(c).trim()!=='').length;
+          if(filled >= 5){ headerIdx = i; break; }
+        }
+        headers = rows[headerIdx].map(h=>String(h).trim());
+        allRows = rows.slice(headerIdx+1).filter(r=>r.some(c=>String(c).trim()!==''&&c!==null));
+      } else {
+        allRows = allRows.concat(rows.slice(1).filter(r=>r.some(c=>String(c).trim()!==''&&c!==null)));
+      }
+    }
+    if(!headers) throw new Error('Sheet trống hoặc không có dữ liệu');
+    const db = DB[brand];
+    db.headers = headers;
+    db.data = allRows.map(r=>{ const o={}; headers.forEach((h,i)=>o[h]=String(r[i]??'').trim()); return o; });
+    db.loaded = true;
+    // detect columns
+    // Inovance: modelCol = auto-detect | Yaskawa: short name = cột C (index 2)
+    db.modelCol = brand==='inovance'
+      ? detectCol(headers, ['model','part no','part number','item','code','mã','article','product'])
+      : (headers[2] || detectCol(headers, ['short name','shortname','short','model']));
+    // Inovance: cost = cột K (index 10) | Yaskawa: list price = cột J (index 9)
+    db.priceCol = headers[brand==='inovance' ? 10 : 9] || detectCol(headers, ['list price','price','usd','vnd','cost','gia']);
+    db.descCol  = detectCol(headers, ['description','desc','mô tả','name','tên','product name','spec']);
+    const cnt = db.data.length;
+    document.getElementById(brand==='inovance'?'inv-cnt':'yas-cnt').textContent = cnt.toLocaleString();
+    document.getElementById(brand==='inovance'?'inv-url':'yas-url').classList.add('ok');
+    setSt(brand,'green', `✓ Đã tải ${cnt.toLocaleString()} sản phẩm | Header: [C]=${db.headers[2]||'?'} [J]=${db.headers[9]||'?'} [K]=${db.headers[10]||'?'}`);
+    showEmpty(brand);
+  } catch(e){
+    document.getElementById(brand==='inovance'?'inv-url':'yas-url').classList.add('err');
+    setSt(brand,'red','⚠ '+e.message+' — Kiểm tra URL Apps Script và quyền truy cập (Anyone)');
+    DB[brand].loaded=false;
+    showEmpty(brand);
+  }
+}
+
+function detectCol(headers, keywords){
+  for(const kw of keywords){ const h=headers.find(h=>h.toLowerCase().includes(kw.toLowerCase())); if(h) return h; }
+  return headers[0]||'';
+}
+
+function setSt(brand,dot,msg){
+  const p=brand==='inovance'?'inv':'yas';
+  document.getElementById(p+'-dot').className='dot '+dot;
+  document.getElementById(p+'-st').textContent=msg;
+}
+
+// ── Fuzzy score ──────────────────────────────────────────────
+function score(q, t){
+  if(!q||!t) return 0;
+  const qn=q.toLowerCase().replace(/[-_\s]/g,''), tn=t.toLowerCase().replace(/[-_\s]/g,'');
+  if(tn===qn) return 100;
+  if(tn.startsWith(qn)) return 92;
+  if(tn.includes(qn)) return 82;
+  let qi=0, m=0;
+  for(let ti=0;ti<tn.length&&qi<qn.length;ti++) if(tn[ti]===qn[qi]){m++;qi++;}
+  return m===qn.length ? 60+Math.round(30*m/tn.length) : Math.round(50*m/qn.length);
+}
+
+// ── Search ────────────────────────────────────────────────────
+function doSearch(brand){
+  const db=DB[brand];
+  const q=(document.getElementById(brand==='inovance'?'inv-q':'yas-q').value||'').trim();
+  const c=document.getElementById(brand==='inovance'?'inv-res':'yas-res');
+  if(!db.loaded){ showEmpty(brand); return; }
+  if(!q){ showEmpty(brand); return; }
+  const res=db.data.map(row=>({row, s:score(q,row[db.modelCol]||'')}))
+    .filter(x=>x.s>20).sort((a,b)=>b.s-a.s).slice(0,15);
+  if(!res.length){ c.innerHTML=`<div class="es"><div style="font-size:36px;margin-bottom:10px">🔍</div><h3>Không tìm thấy kết quả</h3><p>Thử nhập từ khóa ngắn hơn hoặc khác</p></div>`; return; }
+  c.innerHTML=`<div class="rh">Tìm thấy ${res.length} kết quả cho "<b>${q}</b>"</div><div class="rg">${res.map((x,i)=>brand==='inovance'?cardInv(x,i,db):cardYas(x,i,db)).join('')}</div>`;
+  // init calculations
+  res.forEach((_,i)=>{
+    const uid=(brand==='inovance'?'inv':'yas')+'_'+i;
+    const lp=parseP(res[i].row[db.priceCol]);
+    if(brand==='inovance') calcMargin(uid,lp);
+    else calcMarkup(uid,lp);
+  });
+}
+
+function clearQ(brand){ document.getElementById(brand==='inovance'?'inv-q':'yas-q').value=''; showEmpty(brand); }
+
+function showEmpty(brand){
+  const db=DB[brand]; const c=document.getElementById(brand==='inovance'?'inv-res':'yas-res');
+  if(!db.loaded) c.innerHTML=`<div class="es"><div style="font-size:32px;margin-bottom:8px">🔌</div><h3>Chưa kết nối</h3><p>Nhập URL Apps Script và nhấn Kết nối</p></div>`;
+  else c.innerHTML=`<div class="es"><div style="font-size:32px;margin-bottom:8px">📋</div><h3>Đã tải ${db.data.length.toLocaleString()} sản phẩm</h3><p>Nhập tên model để bắt đầu tra cứu</p></div>`;
+}
+
+// ── Cards ─────────────────────────────────────────────────────
+function metaHtml(row, excl, headers){
+  return headers.filter(h=>!excl.includes(h)).slice(0,5)
+    .map(h=>row[h]?`<span class="mi"><b>${h}:</b> ${row[h]}</span>`:'').join('');
+}
+
+function cardInv({row,s},i,db){
+  const uid='inv_'+i, lp=parseP(row[db.priceCol]); // cost = cột K
+  const bc=i===0?'mb-top':s>=70?'mb-good':'mb-part';
+  const bl=i===0?'★ Khớp nhất':s>=70?'Khớp tốt':'Gần đúng';
+  const desc=row[db.descCol]?`<div style="font-size:12px;color:var(--g600);margin-bottom:7px">${row[db.descCol]}</div>`:'';
+  const excl=[db.modelCol,db.priceCol,db.descCol];
+  return `<div class="rc ${i===0?'top':''}">
+    <div class="ct"><div class="mn">${row[db.modelCol]||'—'}</div><span class="mb ${bc}">${bl}</span></div>
+    ${desc}<div class="meta">${metaHtml(row,excl,db.headers)}</div>
+    <div class="ps">
+      <div class="pb"><div class="pbl">Giá Cost (Cột K)</div><div class="pv list">${fmt(lp)}</div></div>
+      <div class="pb hi">
+        <div class="pbl">Giá Bán (sau Margin)</div>
+        <div class="pv" id="${uid}_sell">—</div>
+        <div class="cr">
+          <span class="cl">Margin:</span>
+          <input type="number" class="pi" id="${uid}_mg" value="20" min="-100" max="99" step="0.5" oninput="calcMargin('${uid}',${lp})">
+          <span class="ps-sign">%</span>
+        </div>
+        <div class="cres" id="${uid}_pr"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function cardYas({row,s},i,db){
+  const uid='yas_'+i, lp=parseP(row[db.priceCol]); // list = cột J
+  const bc=i===0?'mb-top':s>=70?'mb-good':'mb-part';
+  const bl=i===0?'★ Khớp nhất':s>=70?'Khớp tốt':'Gần đúng';
+  const desc=row[db.descCol]?`<div style="font-size:12px;color:var(--g600);margin-bottom:7px">${row[db.descCol]}</div>`:'';
+  const excl=[db.modelCol,db.priceCol,db.descCol];
+  return `<div class="rc ${i===0?'top':''}">
+    <div class="ct"><div class="mn">${row[db.modelCol]||'—'}</div><span class="mb ${bc}">${bl}</span></div>
+    ${desc}<div class="meta">${metaHtml(row,excl,db.headers)}</div>
+    <div class="ps">
+      <div class="pb"><div class="pbl">Giá List (Cột J)</div><div class="pv list">${fmt(lp)}</div></div>
+      <div class="pb hi">
+        <div class="pbl">Giá Bán (sau Mark-up)</div>
+        <div class="pv" id="${uid}_sell">—</div>
+        <div class="cr">
+          <span class="cl">Mark-up:</span>
+          <input type="number" class="pi" id="${uid}_mu" value="20" min="0" max="1000" step="0.5" oninput="calcMarkup('${uid}',${lp})">
+          <span class="ps-sign">%</span>
+        </div>
+        <div class="cres" id="${uid}_pr"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Calc ──────────────────────────────────────────────────────
+function calcMargin(uid,lp){
+  // Công thức: Giá bán = Cột K / (1 - margin%)
+  const mg=parseFloat(document.getElementById(uid+'_mg')?.value)||0;
+  const se=document.getElementById(uid+'_sell'), pe=document.getElementById(uid+'_pr');
+  if(!se||!pe) return;
+  if(!lp||mg>=100){se.textContent='—';pe.innerHTML='<span style="color:var(--red)">Margin không hợp lệ</span>';return;}
+  const sell=lp/(1-mg/100), profit=sell-lp;
+  se.textContent=fmt(Math.round(sell));
+  se.className='pv'+(profit<0?' neg':'');
+  pe.innerHTML=`<span style="color:var(--g400);font-size:11px">${fmt(lp)} ÷ (1 − ${mg}%) = </span><b>${profit>=0?'+':''}${fmt(Math.round(profit))}</b>`;
+  pe.className='cres'+(profit<0?' neg':'');
+}
+
+function calcMarkup(uid,lp){
+  // Công thức: Giá bán = Giá list (cột J) + Giá list × markup%
+  const mu=parseFloat(document.getElementById(uid+'_mu')?.value)||0;
+  const se=document.getElementById(uid+'_sell'), pe=document.getElementById(uid+'_pr');
+  if(!se||!pe) return;
+  if(!lp){se.textContent='—';pe.innerHTML='';return;}
+  const sell=lp+(lp*mu/100), profit=sell-lp;
+  se.textContent=fmt(Math.round(sell));
+  se.className='pv';
+  pe.innerHTML=`<span style="color:var(--g400);font-size:11px">${fmt(lp)} + ${fmt(lp)} × ${mu}% = </span><b>+${fmt(Math.round(profit))}</b>`;
+  pe.className='cres';
+}
+
+function parseP(v){ if(!v) return 0; const n=parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+function fmt(v){ if(!v&&v!==0) return '—'; if(v===0) return '—'; return v.toLocaleString('vi-VN'); }
+
+// ── Tabs ──────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['inovance','yaskawa'][i]===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+// ── Enter key ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('inv-q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch('inovance')});
+  document.getElementById('yas-q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch('yaskawa')});
+  showEmpty('inovance'); showEmpty('yaskawa');
+
+  // Auto-load saved URLs from localStorage
+  const su=localStorage.getItem('inv_url'), yu=localStorage.getItem('yas_url');
+  if(su){ document.getElementById('inv-url').value=su; }
+  if(yu){ document.getElementById('yas-url').value=yu; }
+  if(su||yu){
+    // Auto-connect silently on page load
+    setTimeout(()=>connectAll(true), 100);
+  }
+});
+
+</script>
+</body>
+</html>
