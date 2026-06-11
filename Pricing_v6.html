@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FA Price Lookup</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#E8620A;--orange-pale:#FFF3EC;--orange-bd:#FDDCC8;--orange-dk:#B34D05;
+  --g50:#F8F7F5;--g100:#EEECE8;--g200:#D5D2CB;--g400:#9B978E;--g600:#5C5850;--g800:#2E2C28;
+  --green:#217A45;--red:#C0392B;--blue:#1A5FA8;--blue-bg:#E8F1FA;
+  --r:10px;--sh:0 2px 12px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:var(--g50);color:var(--g800);min-height:100vh}
+header{background:var(--orange);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(232,98,10,.3)}
+.logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:.5px}
+.logo span{color:rgba(255,255,255,.6);font-weight:600}
+.hdr-sub{font-size:12px;color:rgba(255,255,255,.75)}
+main{max-width:1060px;margin:0 auto;padding:24px 18px 60px}
+
+/* SETUP */
+.setup{background:#fff;border-radius:var(--r);border:1.5px solid var(--orange-bd);padding:22px;margin-bottom:22px;box-shadow:var(--sh)}
+.setup-title{font-size:12px;font-weight:700;color:var(--orange-dk);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.setup-desc{font-size:13px;color:var(--g600);margin-bottom:14px;line-height:1.6}
+.setup-desc a{color:var(--orange);text-decoration:none}
+.setup-desc a:hover{text-decoration:underline}
+.url-row{display:flex;gap:10px;align-items:stretch;margin-bottom:10px}
+.url-row input{flex:1;padding:11px 14px;border:1.5px solid var(--g200);border-radius:8px;font-size:13px;font-family:'Barlow',sans-serif;color:var(--g800);outline:none;background:var(--g50);transition:border-color .15s}
+.url-row input:focus{border-color:var(--orange);background:#fff}
+.url-row input.ok{border-color:var(--green)}
+.url-row input.err{border-color:var(--red)}
+.btn-connect{padding:11px 22px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;transition:background .15s;white-space:nowrap}
+.btn-connect:hover{background:var(--orange-dk)}
+.btn-connect:disabled{background:var(--g200);cursor:not-allowed}
+#connect-msg{font-size:13px;color:var(--g600)}
+.setup-note{margin-top:12px;font-size:12px;color:var(--g400);line-height:1.7;padding:10px 14px;background:var(--g50);border-radius:7px;border-left:3px solid var(--orange-bd)}
+#guide{display:none;margin-bottom:14px;padding:14px;background:var(--g50);border-radius:8px;border:1px solid var(--g100);font-size:12px;line-height:1.9;color:var(--g600)}
+#guide pre{background:#fff;padding:10px;border-radius:6px;border:1px solid var(--g200);margin:8px 0;overflow-x:auto;font-size:11px;line-height:1.6}
+#guide b{color:var(--g800)}
+#guide code{background:var(--g100);padding:1px 5px;border-radius:3px;font-size:11px}
+
+/* STATUS */
+.status-banner{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:8px;margin-bottom:18px;font-size:13px;background:#fff;border:1.5px solid var(--g100)}
+.status-banner.loaded{border-color:var(--green);background:#f0faf4}
+.status-banner.error{border-color:var(--red);background:#fef2f1}
+.status-banner.loading{border-color:var(--orange-bd);background:var(--orange-pale)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--g200);flex-shrink:0}
+.dot.green{background:var(--green)}.dot.orange{background:var(--orange);animation:pulse 1s infinite}.dot.red{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* TABS */
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:10px 26px;border-radius:8px;border:2px solid var(--g200);font-size:14px;font-weight:700;cursor:pointer;transition:all .18s;background:#fff;color:var(--g600);font-family:'Barlow',sans-serif}
+.tab.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+.tab:hover:not(.active){border-color:var(--orange);color:var(--orange)}
+.tab-badge{display:inline-block;border-radius:20px;font-size:11px;padding:1px 8px;margin-left:5px;font-weight:700;background:rgba(255,255,255,.25)}
+.tab:not(.active) .tab-badge{background:var(--orange-pale);color:var(--orange)}
+.panel{display:none}.panel.active{display:block}
+
+/* SEARCH */
+.sc{background:#fff;border-radius:var(--r);border:1.5px solid var(--orange-bd);padding:20px;margin-bottom:18px;box-shadow:var(--sh)}
+.sc-label{font-size:11px;font-weight:700;color:var(--orange-dk);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.sr{display:flex;gap:8px;align-items:center}
+.si{flex:1;padding:11px 14px;border:1.5px solid var(--g200);border-radius:8px;font-size:15px;font-family:'Barlow',sans-serif;color:var(--g800);background:var(--g50);outline:none;transition:border-color .15s,background .15s}
+.si:focus{border-color:var(--orange);background:#fff}
+.si::placeholder{color:var(--g400)}
+.btn-s{padding:11px 20px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Barlow',sans-serif;white-space:nowrap;transition:background .15s}
+.btn-s:hover{background:var(--orange-dk)}
+.btn-x{padding:11px 13px;background:#fff;color:var(--g600);border:1.5px solid var(--g200);border-radius:8px;font-size:14px;cursor:pointer;font-family:'Barlow',sans-serif;transition:all .15s}
+.btn-x:hover{border-color:var(--orange);color:var(--orange)}
+.hint{font-size:12px;color:var(--g400);margin-top:7px}
+.hint b{color:var(--orange)}
+
+/* RESULTS */
+.rh{font-size:13px;color:var(--g600);margin-bottom:10px;font-weight:500}
+.rg{display:flex;flex-direction:column;gap:10px}
+.rc{background:#fff;border-radius:var(--r);border:1.5px solid var(--g100);padding:16px 18px;transition:border-color .15s,box-shadow .15s}
+.rc:hover{border-color:var(--orange-bd);box-shadow:0 4px 16px rgba(232,98,10,.08)}
+.rc.top{border-color:var(--orange-bd);background:var(--orange-pale)}
+.ct{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:10px}
+.mn{font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:800;color:var(--g800);flex:1;word-break:break-all}
+.mb{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.mb-top{background:var(--orange);color:#fff}.mb-good{background:var(--blue-bg);color:var(--blue)}.mb-part{background:var(--g100);color:var(--g600)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:10px}
+.mi{font-size:12px;color:var(--g600)}.mi b{color:var(--g800);font-weight:600}
+.ps{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:8px;padding-top:10px;border-top:1px solid var(--g100)}
+.pb{background:var(--g50);border-radius:8px;padding:9px 12px}
+.pb.hi{background:var(--orange-pale);border:1px solid var(--orange-bd)}
+.pb.blue{background:var(--blue-bg);border:1px solid #c5d9ef}
+.pbl{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px}
+.pv{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--orange)}
+.pv.list{color:var(--g600);font-size:16px;font-weight:600}
+.pv.blue-v{color:var(--blue);font-size:18px}
+.pv.neg{color:var(--red)}
+.cr{display:flex;align-items:center;gap:6px;margin-top:7px}
+.cl{font-size:11px;color:var(--g600);white-space:nowrap;font-weight:500;min-width:55px}
+.pi{width:70px;padding:5px 8px;border:1.5px solid var(--g200);border-radius:6px;font-size:14px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:var(--orange);text-align:right;outline:none;background:#fff;transition:border-color .15s}
+.pi:focus{border-color:var(--orange)}
+.ps-sign{font-size:12px;color:var(--g400)}
+.cres{font-size:11px;color:var(--g600);margin-top:4px;line-height:1.5}
+.cres b{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--green)}
+.cres.neg b{color:var(--red)}
+.es{text-align:center;padding:40px 24px;color:var(--g400)}
+.es-icon{font-size:36px;margin-bottom:10px}
+.es h3{font-size:15px;color:var(--g600);margin-bottom:5px}
+.es p{font-size:13px}
+footer{text-align:center;padding:18px;font-size:12px;color:var(--g400);border-top:1px solid var(--g100);margin-top:40px}
+@media(max-width:580px){
+  .url-row{flex-direction:column}.btn-connect{width:100%}
+  .sr{flex-wrap:wrap}.btn-s{width:100%}
+  .ps{grid-template-columns:1fr 1fr}
+  .tabs{gap:6px}.tab{padding:9px 14px;font-size:13px}
+  header{padding:0 14px}.hdr-sub{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">FA<span>Price</span></div>
+  <div class="hdr-sub">Factory Automation — Internal Price Lookup</div>
+</header>
+<main>
+
+<div class="setup" id="setup-panel">
+  <div class="setup-title">⚙ Kết nối Google Sheets</div>
+  <div class="setup-desc">
+    Dán <b>1 Apps Script URL duy nhất</b> — Google Sheet tổng hợp gồm 3 tab: <b>Inovance</b>, <b>Yaskawa</b>, <b>Mitsubishi</b>.<br>
+    <a href="#" onclick="toggleGuide();return false">▶ Hướng dẫn tạo Google Sheet &amp; Apps Script (click để mở)</a>
+  </div>
+  <div id="guide">
+    <b>Bước 1 — Tạo Google Sheet tổng hợp:</b><br>
+    Tạo 1 Google Sheet mới → đổi tên 3 tab lần lượt thành: <code>Inovance</code> &nbsp;|&nbsp; <code>Yaskawa</code> &nbsp;|&nbsp; <code>Mitsubishi</code><br>
+    Copy toàn bộ dữ liệu bảng giá vào từng tab (giữ nguyên cấu trúc cột như bảng gốc).<br><br>
+    <b>Bước 2 — Tạo Apps Script:</b><br>
+    Mở Google Sheet → <b>Extensions → Apps Script</b> → xóa code cũ → dán code sau:
+<pre>function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var names = ['Inovance', 'Yaskawa', 'Mitsubishi'];
+  var result = {};
+  names.forEach(function(name) {
+    var sheet = ss.getSheetByName(name);
+    if (sheet) result[name] = sheet.getDataRange().getValues();
+  });
+  var json = JSON.stringify(result);
+  var cb = e && e.parameter && e.parameter.callback;
+  if (cb) {
+    return ContentService
+      .createTextOutput(cb + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService
+    .createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+    <b>Bước 3 — Deploy:</b><br>
+    <b>Deploy → New deployment</b> → Type: <b>Web app</b> → Execute as: <b>Me</b> → Who has access: <b>Anyone</b> → <b>Deploy</b><br>
+    Copy URL dạng <code>https://script.google.com/macros/s/…/exec</code> → dán vào ô bên dưới.
+  </div>
+  <div class="url-row">
+    <input type="text" id="main-url" placeholder="https://script.google.com/macros/s/.../exec" oninput="document.getElementById('main-url').classList.remove('ok','err')">
+    <button class="btn-connect" id="btn-connect" onclick="connectAll()">🔗 Kết nối &amp; Tải dữ liệu</button>
+  </div>
+  <div style="min-height:20px;margin-bottom:4px"><span id="connect-msg"></span></div>
+  <div class="setup-note">
+    💡 Chỉ cần <b>1 URL duy nhất</b> cho cả 3 bảng giá. App tự lưu URL — mở lại không cần nhập lại.
+  </div>
+</div>
+
+<div class="status-banner" id="status-banner">
+  <span class="dot" id="main-dot"></span>
+  <span id="main-st">Chưa kết nối — nhập URL và nhấn Kết nối</span>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('inovance')">Inovance <span class="tab-badge" id="inv-cnt">—</span></button>
+  <button class="tab" onclick="switchTab('yaskawa')">Yaskawa <span class="tab-badge" id="yas-cnt">—</span></button>
+  <button class="tab" onclick="switchTab('mitsubishi')">Mitsubishi <span class="tab-badge" id="mit-cnt">—</span></button>
+</div>
+
+<div class="panel active" id="panel-inovance">
+  <div class="sc">
+    <div class="sc-label">Inovance — Tìm theo Model</div>
+    <div class="sr">
+      <input class="si" id="inv-q" placeholder="Nhập model, VD: MD500, H5U, IS620N…" oninput="doSearch('inovance')">
+      <button class="btn-x" onclick="clearQ('inovance')">✕</button>
+      <button class="btn-s" onclick="doSearch('inovance')">🔍 Tra cứu</button>
+    </div>
+    <div class="hint">Tìm gần đúng — nhập 1 phần model. VD: <b>MD500</b>, <b>H5U</b>, <b>IS620</b></div>
+  </div>
+  <div id="inv-res"></div>
+</div>
+
+<div class="panel" id="panel-yaskawa">
+  <div class="sc">
+    <div class="sc-label">Yaskawa — Tìm theo Short Name</div>
+    <div class="sr">
+      <input class="si" id="yas-q" placeholder="Nhập short name, VD: GA700, SGD7S, CACR…" oninput="doSearch('yaskawa')">
+      <button class="btn-x" onclick="clearQ('yaskawa')">✕</button>
+      <button class="btn-s" onclick="doSearch('yaskawa')">🔍 Tra cứu</button>
+    </div>
+    <div class="hint">Tìm gần đúng — nhập 1 phần tên. VD: <b>GA700</b>, <b>SGD7S</b>, <b>CACR</b></div>
+  </div>
+  <div id="yas-res"></div>
+</div>
+
+<div class="panel" id="panel-mitsubishi">
+  <div class="sc">
+    <div class="sc-label">Mitsubishi — Tìm theo Material Name</div>
+    <div class="sr">
+      <input class="si" id="mit-q" placeholder="Nhập model, VD: AC30TB, AJ65SBTB1…" oninput="doSearch('mitsubishi')">
+      <button class="btn-x" onclick="clearQ('mitsubishi')">✕</button>
+      <button class="btn-s" onclick="doSearch('mitsubishi')">🔍 Tra cứu</button>
+    </div>
+    <div class="hint">Tìm gần đúng — nhập 1 phần model. VD: <b>AC30TB</b>, <b>A6BAT</b>, <b>AJ65</b></div>
+  </div>
+  <div id="mit-res"></div>
+</div>
+
+</main>
+<footer>Chỉ dùng nội bộ — dữ liệu tải trực tiếp từ Google Sheets · SACS FA Team</footer>
+
+<script>
+const DB = {
+  inovance:   { data:[], headers:[], loaded:false, modelCol:'', priceCol:'', descCol:'' },
+  yaskawa:    { data:[], headers:[], loaded:false, modelCol:'', priceCol:'', descCol:'' },
+  mitsubishi: { data:[], headers:[], loaded:false, modelCol:'', priceCol:'', descCol:'' }
+};
+
+// Tên tab trong Google Sheet → brand key
+const SHEET_MAP = { 'Inovance':'inovance', 'Yaskawa':'yaskawa', 'Mitsubishi':'mitsubishi' };
+
+function toggleGuide(){
+  const g=document.getElementById('guide');
+  g.style.display=g.style.display==='none'?'block':'none';
+}
+
+// JSONP — bypass CORS trên iOS/mobile
+function fetchJSONP(url){
+  return new Promise((resolve,reject)=>{
+    const cb='__gs_'+Date.now()+'_'+Math.round(Math.random()*99999);
+    const timer=setTimeout(()=>{cleanup();reject(new Error('Timeout 15s — kiểm tra URL và quyền Anyone'));},15000);
+    function cleanup(){delete window[cb];const s=document.getElementById(cb);if(s)s.remove();}
+    window[cb]=function(data){clearTimeout(timer);cleanup();resolve(data);};
+    const s=document.createElement('script');
+    s.id=cb;
+    s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+    s.onerror=()=>{clearTimeout(timer);cleanup();reject(new Error('Không load được — kiểm tra URL Apps Script'));};
+    document.head.appendChild(s);
+  });
+}
+
+// Tự động tìm hàng header thực sự (bỏ qua các hàng metadata trên cùng)
+function findHeaderRow(rows){
+  for(let i=0;i<Math.min(rows.length,15);i++){
+    if(rows[i].filter(c=>String(c).trim()!=='').length>=5) return i;
+  }
+  return 0;
+}
+
+function detectCol(headers,keywords){
+  for(const kw of keywords){
+    const h=headers.find(h=>h.toLowerCase().includes(kw.toLowerCase()));
+    if(h) return h;
+  }
+  return headers[0]||'';
+}
+
+// Parse dữ liệu của 1 tab vào DB
+function parseSheet(brand,rows){
+  if(!rows||rows.length<2) return;
+  const hIdx=findHeaderRow(rows);
+  const headers=rows[hIdx].map(h=>String(h).trim());
+  const data=rows.slice(hIdx+1)
+    .filter(r=>r.some(c=>String(c).trim()!==''))
+    .map(r=>{const o={};headers.forEach((h,i)=>o[h]=String(r[i]??'').trim());return o;});
+  const db=DB[brand];
+  db.headers=headers; db.data=data; db.loaded=true;
+
+  if(brand==='inovance'){
+    db.modelCol=detectCol(headers,['model','part no','part number','item','code','article','product']);
+    db.priceCol=headers[10]||detectCol(headers,['list price','price','usd','vnd','cost']); // cột K
+    db.descCol=detectCol(headers,['description','desc','spec']);
+  } else if(brand==='yaskawa'){
+    db.modelCol=headers[2]||detectCol(headers,['short name','shortname','short','model']); // cột C
+    db.priceCol=headers[9]||detectCol(headers,['price','usd','vnd','cost']); // cột J
+    db.descCol=detectCol(headers,['description','desc','part description','spec']);
+  } else {
+    db.modelCol=headers[1]||detectCol(headers,['material name','name','model','item']); // cột B
+    db.priceCol=headers[3]||detectCol(headers,['new std price','std price','price','cost']); // cột D
+    db.descCol=detectCol(headers,['special spec','special','spec','description']);
+  }
+
+  const cnts={inovance:'inv-cnt',yaskawa:'yas-cnt',mitsubishi:'mit-cnt'};
+  document.getElementById(cnts[brand]).textContent=data.length.toLocaleString();
+  showEmpty(brand);
+}
+
+async function connectAll(silent){
+  const url=document.getElementById('main-url').value.trim();
+  if(!url){if(!silent)setMsg('Vui lòng nhập URL Apps Script','red');return;}
+  localStorage.setItem('main_url',url);
+  if(!silent){document.getElementById('btn-connect').disabled=true;}
+  setBanner('loading','Đang tải dữ liệu từ Google Sheets…');
+  setMsg('','');
+  try{
+    const json=await fetchJSONP(url);
+    let loaded=0;
+    Object.entries(SHEET_MAP).forEach(([name,brand])=>{
+      if(json[name]){parseSheet(brand,json[name]);loaded++;}
+    });
+    if(loaded===0) throw new Error('Không tìm thấy tab nào tên Inovance / Yaskawa / Mitsubishi trong sheet');
+    document.getElementById('main-url').classList.add('ok');
+    const total=Object.values(DB).reduce((s,d)=>s+d.data.length,0);
+    setBanner('green',`✓ Đã tải ${total.toLocaleString()} sản phẩm từ ${loaded}/3 bảng giá — sẵn sàng tra cứu`);
+    setMsg(`✅ Kết nối thành công — ${loaded}/3 bảng giá`,'green');
+  } catch(e){
+    document.getElementById('main-url').classList.add('err');
+    setBanner('error','⚠ '+e.message);
+    setMsg('❌ '+e.message,'red');
+  }
+  if(!silent) document.getElementById('btn-connect').disabled=false;
+}
+
+function setBanner(state,msg){
+  const b=document.getElementById('status-banner');
+  const d=document.getElementById('main-dot');
+  b.className='status-banner '+(state==='green'?'loaded':state==='error'?'error':'loading');
+  d.className='dot '+(state==='green'?'green':state==='error'?'red':'orange');
+  document.getElementById('main-st').textContent=msg;
+}
+
+function setMsg(msg,color){
+  const el=document.getElementById('connect-msg');
+  el.textContent=msg;
+  el.style.color=color==='green'?'var(--green)':color==='red'?'var(--red)':'var(--g600)';
+}
+
+// Fuzzy score
+function score(q,t){
+  if(!q||!t) return 0;
+  const qn=q.toLowerCase().replace(/[-_\s]/g,''),tn=t.toLowerCase().replace(/[-_\s]/g,'');
+  if(tn===qn) return 100;
+  if(tn.startsWith(qn)) return 92;
+  if(tn.includes(qn)) return 82;
+  let qi=0,m=0;
+  for(let ti=0;ti<tn.length&&qi<qn.length;ti++) if(tn[ti]===qn[qi]){m++;qi++;}
+  return m===qn.length?60+Math.round(30*m/tn.length):Math.round(50*m/qn.length);
+}
+
+const qId=b=>({inovance:'inv-q',yaskawa:'yas-q',mitsubishi:'mit-q'})[b];
+const rId=b=>({inovance:'inv-res',yaskawa:'yas-res',mitsubishi:'mit-res'})[b];
+const pfx=b=>({inovance:'inv',yaskawa:'yas',mitsubishi:'mit'})[b];
+
+function doSearch(brand){
+  const db=DB[brand];
+  const q=(document.getElementById(qId(brand)).value||'').trim();
+  const c=document.getElementById(rId(brand));
+  if(!db.loaded||!q){showEmpty(brand);return;}
+  const res=db.data.map(row=>({row,s:score(q,row[db.modelCol]||'')}))
+    .filter(x=>x.s>20).sort((a,b)=>b.s-a.s).slice(0,15);
+  if(!res.length){
+    c.innerHTML='<div class="es"><div class="es-icon">🔍</div><h3>Không tìm thấy kết quả</h3><p>Thử nhập từ khóa khác hoặc ngắn hơn</p></div>';
+    return;
+  }
+  const fn={inovance:cardInv,yaskawa:cardYas,mitsubishi:cardMit}[brand];
+  c.innerHTML=`<div class="rh">Tìm thấy ${res.length} kết quả cho "<b>${q}</b>"</div>`
+    +`<div class="rg">${res.map((x,i)=>fn(x,i,db)).join('')}</div>`;
+  res.forEach((item,i)=>{
+    const uid=pfx(brand)+'_'+i;
+    const lp=parseP(item.row[db.priceCol]);
+    if(brand==='inovance') calcMargin(uid,lp);
+    else if(brand==='yaskawa') calcMarkup(uid,lp);
+    else calcMit(uid,lp);
+  });
+}
+
+function clearQ(brand){document.getElementById(qId(brand)).value='';showEmpty(brand);}
+
+function showEmpty(brand){
+  const db=DB[brand],c=document.getElementById(rId(brand));
+  if(!db.loaded) c.innerHTML='<div class="es"><div class="es-icon">🔌</div><h3>Chưa có dữ liệu</h3><p>Kết nối Google Sheets để bắt đầu</p></div>';
+  else c.innerHTML=`<div class="es"><div class="es-icon">📋</div><h3>Đã tải ${db.data.length.toLocaleString()} sản phẩm</h3><p>Nhập tên model để tra cứu</p></div>`;
+}
+
+function metaHtml(row,excl,headers){
+  return headers.filter(h=>!excl.includes(h)&&row[h]).slice(0,4)
+    .map(h=>`<span class="mi"><b>${h}:</b> ${row[h]}</span>`).join('');
+}
+
+// Card Inovance — Giá bán = Cột K / (1 - margin%)
+function cardInv({row,s},i,db){
+  const uid='inv_'+i,lp=parseP(row[db.priceCol]);
+  const bc=i===0?'mb-top':s>=70?'mb-good':'mb-part';
+  const bl=i===0?'★ Khớp nhất':s>=70?'Khớp tốt':'Gần đúng';
+  const desc=row[db.descCol]?`<div style="font-size:12px;color:var(--g600);margin-bottom:7px">${row[db.descCol]}</div>`:'';
+  const excl=[db.modelCol,db.priceCol,db.descCol];
+  return `<div class="rc ${i===0?'top':''}">
+    <div class="ct"><div class="mn">${row[db.modelCol]||'—'}</div><span class="mb ${bc}">${bl}</span></div>
+    ${desc}<div class="meta">${metaHtml(row,excl,db.headers)}</div>
+    <div class="ps">
+      <div class="pb"><div class="pbl">Giá Cost (Cột K)</div><div class="pv list">${fmt(lp)}</div></div>
+      <div class="pb hi">
+        <div class="pbl">Giá Bán (sau Margin)</div>
+        <div class="pv" id="${uid}_sell">—</div>
+        <div class="cr">
+          <span class="cl">Margin:</span>
+          <input type="number" class="pi" id="${uid}_mg" value="20" min="-99" max="99" step="0.5" oninput="calcMargin('${uid}',${lp})">
+          <span class="ps-sign">%</span>
+        </div>
+        <div class="cres" id="${uid}_pr"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Card Yaskawa — Giá bán = Cột J + Cột J × markup%
+function cardYas({row,s},i,db){
+  const uid='yas_'+i,lp=parseP(row[db.priceCol]);
+  const bc=i===0?'mb-top':s>=70?'mb-good':'mb-part';
+  const bl=i===0?'★ Khớp nhất':s>=70?'Khớp tốt':'Gần đúng';
+  const desc=row[db.descCol]?`<div style="font-size:12px;color:var(--g600);margin-bottom:7px">${row[db.descCol]}</div>`:'';
+  const excl=[db.modelCol,db.priceCol,db.descCol];
+  return `<div class="rc ${i===0?'top':''}">
+    <div class="ct"><div class="mn">${row[db.modelCol]||'—'}</div><span class="mb ${bc}">${bl}</span></div>
+    ${desc}<div class="meta">${metaHtml(row,excl,db.headers)}</div>
+    <div class="ps">
+      <div class="pb"><div class="pbl">Giá List (Cột J)</div><div class="pv list">${fmt(lp)}</div></div>
+      <div class="pb hi">
+        <div class="pbl">Giá Bán (sau Mark-up)</div>
+        <div class="pv" id="${uid}_sell">—</div>
+        <div class="cr">
+          <span class="cl">Mark-up:</span>
+          <input type="number" class="pi" id="${uid}_mu" value="20" min="0" max="1000" step="0.5" oninput="calcMarkup('${uid}',${lp})">
+          <span class="ps-sign">%</span>
+        </div>
+        <div class="cres" id="${uid}_pr"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Card Mitsubishi — Giá nhập = Cột D × 1.15 | Giá bán = Giá nhập × (1 + markup%)
+function cardMit({row,s},i,db){
+  const uid='mit_'+i,ncc=parseP(row[db.priceCol]),nhap=Math.round(ncc*1.15);
+  const bc=i===0?'mb-top':s>=70?'mb-good':'mb-part';
+  const bl=i===0?'★ Khớp nhất':s>=70?'Khớp tốt':'Gần đúng';
+  const matCode=row[db.headers[0]]?`<span class="mi"><b>Material Code:</b> ${row[db.headers[0]]}</span>`:'';
+  const spec=row[db.descCol]?`<span class="mi"><b>Special Spec:</b> ${row[db.descCol]}</span>`:'';
+  return `<div class="rc ${i===0?'top':''}">
+    <div class="ct"><div class="mn">${row[db.modelCol]||'—'}</div><span class="mb ${bc}">${bl}</span></div>
+    <div class="meta">${matCode}${spec}</div>
+    <div class="ps">
+      <div class="pb"><div class="pbl">Giá NCC (Cột D)</div><div class="pv list">${fmt(ncc)}</div></div>
+      <div class="pb blue"><div class="pbl">Giá Nhập (+15% cố định)</div><div class="pv blue-v">${fmt(nhap)}</div><div style="font-size:10px;color:var(--g400);margin-top:3px">${fmt(ncc)} × 1.15</div></div>
+      <div class="pb hi">
+        <div class="pbl">Giá Bán Thương Mại</div>
+        <div class="pv" id="${uid}_sell">—</div>
+        <div class="cr">
+          <span class="cl">Mark-up:</span>
+          <input type="number" class="pi" id="${uid}_mu" value="13" min="0" max="1000" step="0.5" oninput="calcMit('${uid}',${nhap})">
+          <span class="ps-sign">%</span>
+        </div>
+        <div class="cres" id="${uid}_pr"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Calc: Inovance margin
+function calcMargin(uid,lp){
+  const mg=parseFloat(document.getElementById(uid+'_mg')?.value)||0;
+  const se=document.getElementById(uid+'_sell'),pe=document.getElementById(uid+'_pr');
+  if(!se||!pe) return;
+  if(!lp||mg>=100){se.textContent='—';pe.innerHTML='<span style="color:var(--red)">Margin không hợp lệ</span>';return;}
+  const sell=lp/(1-mg/100),profit=sell-lp;
+  se.textContent=fmt(Math.round(sell));
+  se.className='pv'+(profit<0?' neg':'');
+  pe.innerHTML=`<span style="color:var(--g400);font-size:10px">${fmt(lp)} ÷ (1−${mg}%) = </span><b>${profit>=0?'+':''}${fmt(Math.round(profit))}</b>`;
+  pe.className='cres'+(profit<0?' neg':'');
+}
+
+// Calc: Yaskawa markup
+function calcMarkup(uid,lp){
+  const mu=parseFloat(document.getElementById(uid+'_mu')?.value)||0;
+  const se=document.getElementById(uid+'_sell'),pe=document.getElementById(uid+'_pr');
+  if(!se||!pe) return;
+  if(!lp){se.textContent='—';pe.innerHTML='';return;}
+  const sell=lp+lp*mu/100,profit=sell-lp;
+  se.textContent=fmt(Math.round(sell));
+  se.className='pv';
+  pe.innerHTML=`<span style="color:var(--g400);font-size:10px">${fmt(lp)} + ${fmt(lp)}×${mu}% = </span><b>+${fmt(Math.round(profit))}</b>`;
+  pe.className='cres';
+}
+
+// Calc: Mitsubishi markup (tính trên giá nhập)
+function calcMit(uid,nhap){
+  const mu=parseFloat(document.getElementById(uid+'_mu')?.value)||0;
+  const se=document.getElementById(uid+'_sell'),pe=document.getElementById(uid+'_pr');
+  if(!se||!pe) return;
+  if(!nhap){se.textContent='—';pe.innerHTML='';return;}
+  const sell=nhap+nhap*mu/100,profit=sell-nhap;
+  se.textContent=fmt(Math.round(sell));
+  se.className='pv';
+  pe.innerHTML=`<span style="color:var(--g400);font-size:10px">${fmt(nhap)} + ${fmt(nhap)}×${mu}% = </span><b>+${fmt(Math.round(profit))}</b>`;
+  pe.className='cres';
+}
+
+function parseP(v){if(!v) return 0;const n=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isNaN(n)?0:n;}
+function fmt(v){if(!v&&v!==0) return '—';if(v===0) return '—';return v.toLocaleString('vi-VN');}
+
+function switchTab(tab){
+  const brands=['inovance','yaskawa','mitsubishi'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',brands[i]===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  ['inovance','yaskawa','mitsubishi'].forEach(b=>{
+    document.getElementById(qId(b)).addEventListener('keydown',e=>{if(e.key==='Enter')doSearch(b);});
+    showEmpty(b);
+  });
+  const saved=localStorage.getItem('main_url');
+  if(saved){
+    document.getElementById('main-url').value=saved;
+    setTimeout(()=>connectAll(true),150);
+  }
+});
+</script>
+</body>
+</html>
